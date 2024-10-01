@@ -1,5 +1,5 @@
-name := 'cosmic-app-template'
-appid := 'com.example.CosmicAppTemplate'
+name := 'astronome'
+appid := 'com.jwestall.Astronome'
 
 rootdir := ''
 prefix := '/usr'
