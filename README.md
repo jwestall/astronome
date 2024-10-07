@@ -1,35 +1,28 @@
-# COSMIC Application Template
+<div align="center">
+  <h1>Astronome</h1>
+  <p>A metronome application for the COSMIC™ Desktop</p>
+</div>
 
-A template for developing applications for the COSMIC™ desktop environment.
+# Manual Manual
 
-## Getting Started
+```
+git clone https://github.com/jwestall/astronome.git
+cd astronome
+sudo just install
+```
 
-Log into your GitHub account and click the "Use this template" button above. This will create a new repository in your account. Choose a name for this repository, and then clone it locally onto your system. Make the following changes after cloning it:
+# Build
+```
+git clone https://github.com/jwestall/astronome.git
+cd astronome
+cargo build
+```
 
-- In `Cargo.toml`, change the `name` and set your `license` and `repository`.
-- Create a `LICENSE` file containing your chosen software license.
-- Rename the `cosmic_app_template` portion of `i18n/en/cosmic_app_template.ftl` to the new crate `name`.
-- In `justfile`, change the `name` and `appid` variables with your own.
-- In `src/app.rs`, change the `APP_ID` value in the `Application` implementation of the `AppModel`.
-- In `src/app.rs`, change the `REPOSITORY` const with the URL to your application's git repository.
-- In `res/app.desktop`, change the `Name=`, `Exec=`, and `Icon=` fields
-- Set your license within the SPDX tags at the top of each source file
+## Dependencies
+- [libcosmic](https://github.com/pop-os/libcosmic?tab=readme-ov-file#building)
 
-A [justfile](./justfile) is included by default with common recipes used by other COSMIC projects. Install from [casey/just][just]
+# Copyright and licensing
 
-- `just` builds the application with the default `just build-release` recipe
-- `just run` builds and runs the application
-- `just install` installs the project into the system
-- `just vendor` creates a vendored tarball
-- `just build-vendored` compiles with vendored dependencies from that tarball
-- `just check` runs clippy on the project to check for linter warnings
-- `just check-json` can be used by IDEs that support LSP
+Copyright 2024 © Jacob Westall
 
-## Documentation
-
-Refer to the [libcosmic API documentation][api-docs] and [book][book] for help with building applications with [libcosmic][libcosmic].
-
-[api-docs]: https://pop-os.github.io/libcosmic/cosmic/
-[book]: https://pop-os.github.io/libcosmic-book/
-[libcosmic]: https://github.com/pop-os/libcosmic/
-[just]: https://github.com/casey/just
+Astronome is released under the terms of the [GPL-3.0](https://github.com/jwestall/astronome/blob/main/LICENSE)
