@@ -1,53 +1,43 @@
-// SPDX-License-Identifier: {{LICENSE}}
-
 use crate::config::Config;
 use crate::fl;
 use cosmic::app::{Command, Core};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
-use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{Alignment, Length, Subscription};
-use cosmic::widget::{self, menu};
-use cosmic::{cosmic_theme, theme, Application, ApplicationExt, Apply, Element};
+use cosmic::iced::{Alignment, Subscription};
+use cosmic::widget::{self, button, menu, text};
+use cosmic::{cosmic_theme, theme, Application, ApplicationExt, Element};
 use futures_util::SinkExt;
 use std::collections::HashMap;
 
 const REPOSITORY: &str = "https://github.com/jwestall/astronome";
 const APP_ICON: &[u8] = include_bytes!("../res/icons/hicolor/scalable/apps/icon.svg");
 
-/// The application model stores app-specific state used to describe its interface and
-/// drive its logic.
 pub struct AppModel {
-    /// Application state which is managed by the COSMIC runtime.
     core: Core,
-    /// Display a context drawer with the designated page if defined.
     context_page: ContextPage,
-    /// Key bindings for the application's menu bar.
     key_binds: HashMap<menu::KeyBind, MenuAction>,
-    // Configuration data that persists between application runs.
     config: Config,
+    tempo: u64,
+    beats: u64,
+    is_tempo_mode: bool,
 }
 
-/// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenRepositoryUrl,
     SubscriptionChannel,
     ToggleContextPage(ContextPage),
     UpdateConfig(Config),
+    ButtonUpPressed,
+    ButtonDownPressed,
+    ButtonModePressed,
+    ButtonPlayPressed,
 }
 
-/// Create a COSMIC application from the app model
 impl Application for AppModel {
-    /// The async executor that will be used to run your application's commands.
     type Executor = cosmic::executor::Default;
-
-    /// Data that your application receives to its init method.
     type Flags = ();
-
-    /// Messages which the application and its widgets will emit.
     type Message = Message;
 
-    /// Unique identifier in RDNN (reverse domain name notation) format.
     const APP_ID: &'static str = "com.jwestall.Astronome";
 
     fn core(&self) -> &Core {
@@ -58,14 +48,11 @@ impl Application for AppModel {
         &mut self.core
     }
 
-    /// Initializes the application with any given flags and startup commands.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        // Construct the app model with the runtime's core.
         let mut app = AppModel {
             core,
             context_page: ContextPage::default(),
             key_binds: HashMap::new(),
-            // Optional configuration file for an application.
             config: cosmic_config::Config::new(Self::APP_ID, Config::VERSION)
                 .map(|context| match Config::get_entry(&context) {
                     Ok(config) => config,
@@ -78,15 +65,16 @@ impl Application for AppModel {
                     }
                 })
                 .unwrap_or_default(),
+            tempo: 120,
+            beats: 4,
+            is_tempo_mode: true,
         };
 
-        // Create a startup command that sets the window title.
         let command = app.update_title();
 
         (app, command)
     }
 
-    /// Elements to pack at the start of the header bar.
     fn header_start(&self) -> Vec<Element<Self::Message>> {
         let menu_bar = menu::bar(vec![menu::Tree::with_children(
             menu::root(fl!("view")),
@@ -99,7 +87,6 @@ impl Application for AppModel {
         vec![menu_bar.into()]
     }
 
-    /// Display a context drawer if the context page is requested.
     fn context_drawer(&self) -> Option<Element<Self::Message>> {
         if !self.core.window.show_context {
             return None;
@@ -110,18 +97,23 @@ impl Application for AppModel {
         })
     }
 
-    /// Describes the interface based on the current state of the application model.
-    ///
-    /// Application events will be processed through the view. Any messages emitted by
-    /// events received by widgets will be passed to the update method.
     fn view(&self) -> Element<Self::Message> {
-        widget::text::title1(fl!("welcome"))
-            .apply(widget::container)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(Horizontal::Center)
-            .align_y(Vertical::Center)
-            .into()
+        let label = if self.is_tempo_mode {
+            "Tempo"
+        } else {
+            "Beats"
+        };
+
+        let column = widget::column()
+            .push(text(self.beats.to_string()))
+            .push(text(self.tempo.to_string()))
+            .push(widget::row()
+                .push(button::standard(label).on_press(Message::ButtonModePressed))
+                .push(button::standard("Up").on_press(Message::ButtonUpPressed))
+                .push(button::standard("Down").on_press(Message::ButtonDownPressed))
+            );
+
+        column.into()
     }
 
     /// Register subscriptions for this application.
@@ -156,20 +148,14 @@ impl Application for AppModel {
         ])
     }
 
-    /// Handles messages emitted by the application and its widgets.
-    ///
-    /// Commands may be returned for asynchronous execution of code in the background
-    /// on the application's async runtime.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::OpenRepositoryUrl => {
                 _ = open::that_detached(REPOSITORY);
             }
-
             Message::SubscriptionChannel => {
                 // For example purposes only.
             }
-
             Message::ToggleContextPage(context_page) => {
                 if self.context_page == context_page {
                     // Close the context drawer if the toggled context page is the same.
@@ -183,9 +169,40 @@ impl Application for AppModel {
                 // Set the title of the context drawer.
                 self.set_context_title(context_page.title());
             }
-
             Message::UpdateConfig(config) => {
                 self.config = config;
+            }
+            Message::ButtonUpPressed => {
+                if self.is_tempo_mode {
+                    self.tempo += 1;
+                } else {
+                    if self.beats < 8 {
+                        self.beats += 1;
+                    } else if self.beats == 8 {
+                        self.beats = 0;
+                    }
+                }
+            }
+            Message::ButtonDownPressed => {
+                if self.is_tempo_mode {
+                    self.tempo -= 1;
+                } else {
+                    if self.beats > 0 {
+                        self.beats -= 1;
+                    } else if self.beats == 0 {
+                        self.beats = 8;
+                    }
+                }
+            }
+            Message::ButtonModePressed => {
+                if self.is_tempo_mode {
+                    self.is_tempo_mode = false;
+                } else {
+                    self.is_tempo_mode = true;
+                }
+            }
+            Message::ButtonPlayPressed => {
+
             }
         }
         Command::none()
